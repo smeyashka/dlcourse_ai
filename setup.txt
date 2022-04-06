@@ -1,0 +1,19 @@
+git clone https://github.com/sim0nsays/dlcourse_ai.git
+cd dlcourse_ai/
+
+virtualenv -p python3.5 .venv
+
+.venv/bin/pip install jupyter notebook tornado\<6 scipy matplotlib
+(c v6 tornado не работает)
+
+
+ls -la assignments/assignment1/requirements.txt
+.venv/bin/pip install -r assignments/assignment1/requirements.txt 
+
+Запуск:
+.venv/bin/jupyter notebook assignments/assignment1/
+
+
+
+
+http://localhost:8889/notebooks/KNN.ipynb

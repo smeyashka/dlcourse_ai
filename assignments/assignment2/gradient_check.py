@@ -29,8 +29,21 @@ def check_gradient(f, x, delta=1e-5, tol=1e-4):
         analytic_grad_at_ix = analytic_grad[ix]
         numeric_grad_at_ix = 0
 
+        #print(ix)
+        xval = x.copy()
+        xval[ix] += delta
+        fx1, g = f(xval)     
+        xval = x.copy()
+        xval[ix] -= delta
+        fx2, g = f(xval)
+        #print(ix, "fx1", fx1, "fx2",fx2)
+        # TODO compute value of numeric gradient of f to idx
+        numeric_grad_at_ix = (fx1 - fx2) / (2*delta)
+        #print("grad_num, analy, diff, delta", numeric_grad_at_ix, analytic_grad_at_ix, (fx1-fx2), 2*delta)
+        #print(ix, analytic_grad_at_ix, numeric_grad_at_ix)
+        
         # TODO Copy from previous assignment
-        raise Exception("Not implemented!")
+        #raise Exception("Not implemented!")
 
         if not np.isclose(numeric_grad_at_ix, analytic_grad_at_ix, tol):
             print("Gradients are different at %s. Analytic: %2.5f, Numeric: %2.5f" % (

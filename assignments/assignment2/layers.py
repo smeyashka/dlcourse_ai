@@ -1,6 +1,67 @@
 import numpy as np
 
 
+def softmax(predictions):
+    '''
+    Computes probabilities from scores
+
+    Arguments:
+      predictions, np array, shape is either (N) or (batch_size, N) -
+        classifier output
+
+    Returns:
+      probs, np array of the same shape as predictions - 
+        probability for every class, 0..1
+    '''
+    # TODO implement softmax
+    # Your final implementation shouldn't have any loops
+    #raise Exception("Not implemented!")
+    
+    if predictions.ndim != 1:
+        batch_size = predictions.shape[0]
+        N = predictions.shape[1]
+        pred = predictions - np.max(predictions, 1).reshape(1, batch_size).transpose()    
+        #sigma = np.divide(np.exp(pred), np.sum(np.exp(pred), 1)).reshape(1, predictions.shape[0]).transpose() 
+        sigma = np.divide(np.exp(pred), np.sum(np.exp(pred), 1).reshape(batch_size,1).dot(np.ones((1,N))))
+    else:
+        pred = predictions - np.max(predictions)
+        sigma = np.exp(pred) / np.sum(np.exp(pred)) 
+    #print("sigma", sigma) 
+    return sigma
+
+
+
+def cross_entropy_loss(probs, target_index):
+    '''
+    Computes cross-entropy loss
+
+    Arguments:
+      probs, np array, shape is either (N) or (batch_size, N) -
+        probabilities for every class
+      target_index: np array of int, shape is (1) or (batch_size) -
+        index of the true class for given sample(s)
+
+    Returns:
+      loss: single value
+    '''
+    # TODO implement cross-entropy
+    # Your final implementation shouldn't have any loops
+    #raise Exception("Not implemented!")
+       
+    if probs.ndim != 1:
+        #loss = -np.log(probs[:, target_index])
+        batch_size = probs.shape[0]        
+        ti = target_index.copy()
+        q = probs[np.arange(0, batch_size), ti.reshape(1, batch_size)]
+        #q[q < 1e-20] = 1e-20       
+        loss = -np.sum(np.log(q))        
+        #print("ti", ti, "probs", probs[np.arange(0, batch_size), ti.reshape(1, batch_size)])
+    else:
+        loss = -np.log(probs[target_index])
+    
+    return loss
+
+
 def l2_regularization(W, reg_strength):
     """
     Computes L2 regularization loss on weights and its gradient
@@ -14,7 +75,10 @@ def l2_regularization(W, reg_strength):
       gradient, np.array same shape as W - gradient of weight by l2 loss
     """
     # TODO: Copy from the previous assignment
-    raise Exception("Not implemented!")
+    #raise Exception("Not implemented!")    
+    loss = np.sum(np.sum(W*W)) * reg_strength    
+    grad = 2*W * reg_strength
+    
     return loss, grad
 
 
@@ -34,9 +98,23 @@ def softmax_with_cross_entropy(preds, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     """
     # TODO: Copy from the previous assignment
-    raise Exception("Not implemented!")
+    #raise Exception("Not implemented!")
+    probs = softmax(preds)
+    #print("p", probs)
+    loss = cross_entropy_loss(probs, target_index)
+    #print("l", loss)
+    
+    dprediction = probs
+    
+    if dprediction.ndim != 1:        
+        batch_size = probs.shape[0]
+        ti = target_index.copy()
+        dprediction[np.arange(0, batch_size), ti.reshape(1, batch_size)] -= 1        
+    else:
+        dprediction[target_index] -= 1
+    
 
-    return loss, d_preds
+    return loss, dprediction
 
 
 class Param:
@@ -51,14 +129,21 @@ class Param:
 
 
 class ReLULayer:
-    def __init__(self):
+    def __init__(self):       
+        self.x = None        
         pass
 
     def forward(self, X):
         # TODO: Implement forward pass
         # Hint: you'll need to save some information about X
         # to use it later in the backward pass
-        raise Exception("Not implemented!")
+        #raise Exception("Not implemented!")
+        self.x = X
+        mask = X < 0
+        res = X.copy()
+        res[mask] = 0       
+        return res
+        
 
     def backward(self, d_out):
         """
@@ -74,7 +159,15 @@ class ReLULayer:
         """
         # TODO: Implement backward pass
         # Your final implementation shouldn't have any loops
-        raise Exception("Not implemented!")
+        #raise Exception("Not implemented!")
+        dx = self.x.copy()
+        mask = self.x < 0
+        dx[mask] = 0
+        dx[~mask] = 1
+        d_result = dx * d_out
+        
+        #NOTE dx можно сохранить при прямом проходе (он вроде не зависит от параметров)?
+        
         return d_result
 
     def params(self):
@@ -91,7 +184,10 @@ class FullyConnectedLayer:
     def forward(self, X):
         # TODO: Implement forward pass
         # Your final implementation shouldn't have any loops
-        raise Exception("Not implemented!")
+        #raise Exception("Not implemented!")
+        res = np.dot(X, self.W.value) + np.dot(np.ones((X.shape[0], 1)), self.B.value)
+        self.X = X
+        return res
 
     def backward(self, d_out):
         """
@@ -115,8 +211,14 @@ class FullyConnectedLayer:
         # It should be pretty similar to linear classifier from
         # the previous assignment
 
-        raise Exception("Not implemented!")
-
+        #raise Exception("Not implemented!")
+        dx = np.dot(d_out, self.W.value.transpose())
+        dw = np.dot(self.X.transpose(), d_out)
+        db = np.sum(d_out, axis = 0)
+        self.W.grad += dw
+        self.B.grad += db
+        d_input = dx
+        
         return d_input
 
     def params(self):
